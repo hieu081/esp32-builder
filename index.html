@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ESP32 OTA Server</title>
+<style>
+body{
+    font-family: Arial, sans-serif;
+    background:#111;
+    color:white;
+    padding:20px;
+}
+.container{
+    max-width:700px;
+    margin:auto;
+    background:#1e1e1e;
+    padding:20px;
+    border-radius:12px;
+}
+input,button{
+    width:100%;
+    padding:12px;
+    margin-top:10px;
+    border:none;
+    border-radius:8px;
+}
+button{
+    cursor:pointer;
+}
+.code{
+    background:black;
+    padding:10px;
+    border-radius:8px;
+    overflow:auto;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h1>ESP32 OTA Firmware Server</h1>
+
+    <h2>Firmware hiện tại</h2>
+    <div class="code">
+        <p>Version: <span id="version">1.0</span></p>
+        <p>Firmware:</p>
+        <a href="./firmware.bin" style="color:cyan;">
+            firmware.bin
+        </a>
+    </div>
+
+    <h2>Cập nhật version</h2>
+
+    <input type="text" id="newVersion" placeholder="Ví dụ 1.1">
+
+    <button onclick="saveVersion()">
+        Save Version
+    </button>
+
+    <p id="status"></p>
+
+    <h2>ESP32 URLs</h2>
+
+    <div class="code">
+https://YOUR_USERNAME.github.io/esp32-ota/version.txt
+
+https://YOUR_USERNAME.github.io/esp32-ota/firmware.bin
+    </div>
+
+</div>
+
+<script>
+async function loadVersion(){
+
+    try{
+        const res = await fetch('./version.txt');
+        const txt = await res.text();
+
+        document.getElementById("version").innerText = txt;
+    }
+    catch(e){
+        console.log(e);
+    }
+}
+
+function saveVersion(){
+
+    const v = document.getElementById("newVersion").value;
+
+    document.getElementById("status").innerHTML =
+    "GitHub Pages không cho sửa file trực tiếp.<br><br>" +
+    "Bạn cần sửa version.txt trong GitHub rồi push lại.";
+
+}
+
+loadVersion();
+</script>
+
+</body>
+</html>
