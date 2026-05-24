@@ -1,6 +1,6 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
-#include <HTTPUpdate.h>
+#include <Update.h>
 
 const char* ssid = "Hieu T2";
 const char* password = "08012004";
@@ -8,69 +8,114 @@ const char* password = "08012004";
 #define CURRENT_VERSION "1.0"
 
 String versionURL =
-"https://YOUR_USERNAME.github.io/esp32-ota/version.txt";
+"https://hieu081.github.io/esp32-ota/version.txt";
 
 String firmwareURL =
-"https://YOUR_USERNAME.github.io/esp32-ota/firmware.bin";
+"https://hieu081.github.io/esp32-ota/firmware.bin";
 
-void checkUpdate(){
+void firmwareUpdate() {
 
+  WiFiClient client;
   HTTPClient http;
 
-  http.begin(versionURL);
+  http.begin(client, firmwareURL);
 
   int httpCode = http.GET();
 
-  if(httpCode == 200){
+  if (httpCode == HTTP_CODE_OK) {
 
-    String newVersion = http.getString();
+    int contentLength = http.getSize();
+
+    bool canBegin =
+      Update.begin(contentLength);
+
+    if (canBegin) {
+
+      WiFiClient * stream =
+        http.getStreamPtr();
+
+      size_t written =
+        Update.writeStream(*stream);
+
+      if (written == contentLength) {
+
+        Serial.println("Written OK");
+
+      } else {
+
+        Serial.println("Written Fail");
+      }
+
+      if (Update.end()) {
+
+        Serial.println("OTA Done");
+
+        if (Update.isFinished()) {
+
+          Serial.println("Restarting...");
+
+          ESP.restart();
+        }
+
+      } else {
+
+        Serial.println(Update.errorString());
+      }
+
+    } else {
+
+      Serial.println("Not enough space");
+    }
+
+  } else {
+
+    Serial.println("HTTP Fail");
+  }
+
+  http.end();
+}
+
+void checkUpdate() {
+
+  WiFiClient client;
+  HTTPClient http;
+
+  http.begin(client, versionURL);
+
+  int httpCode = http.GET();
+
+  if (httpCode == 200) {
+
+    String newVersion =
+      http.getString();
 
     newVersion.trim();
 
-    Serial.println("Current Version: "
+    Serial.println("Current: "
                     + String(CURRENT_VERSION));
 
-    Serial.println("New Version: "
+    Serial.println("New: "
                     + newVersion);
 
-    if(newVersion != CURRENT_VERSION){
+    if (newVersion != CURRENT_VERSION) {
 
-      Serial.println("Updating Firmware...");
+      Serial.println("Start OTA");
 
-      t_httpUpdate_return ret =
-      httpUpdate.update(firmwareURL);
-
-      switch(ret){
-
-        case HTTP_UPDATE_FAILED:
-
-          Serial.printf("Update Failed Error (%d): %s\n",
-          httpUpdate.getLastError(),
-          httpUpdate.getLastErrorString().c_str());
-
-        break;
-
-        case HTTP_UPDATE_NO_UPDATES:
-          Serial.println("No Updates");
-        break;
-
-        case HTTP_UPDATE_OK:
-          Serial.println("Update Success");
-        break;
-      }
+      firmwareUpdate();
     }
   }
 
   http.end();
 }
 
-void setup(){
+void setup() {
 
   Serial.begin(115200);
 
-  WiFi.begin(ssid,password);
+  WiFi.begin(ssid, password);
 
-  while(WiFi.status()!=WL_CONNECTED){
+  while (WiFi.status() != WL_CONNECTED) {
+
     delay(500);
     Serial.print(".");
   }
@@ -80,6 +125,6 @@ void setup(){
   checkUpdate();
 }
 
-void loop(){
+void loop() {
 
 }
