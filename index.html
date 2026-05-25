@@ -1,110 +1,78 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>ESP32 Cloud OTA</title>
+export default async function handler(req, res){
+    try{
+        console.log("1. Request received");
+        
+        const token = process.env.GITHUB_TOKEN;
+        console.log("2. Token exists:", !!token);
+        
+        if(!token) {
+            console.log("ERROR: Missing GITHUB_TOKEN");
+            return res.status(500).json({ message: "Missing GitHub Token" });
+        }
 
-<style>
+        const owner = 'hieu081';
+        const repo = 'esp32-builder';
+        const path = 'esp32-builder.ino';
+        const code = req.body.code;
+        
+        console.log("3. Code length:", code?.length);
 
-body{
-    margin:0;
-    background:#111;
-    color:white;
-    font-family:Arial;
-}
+        const api = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
 
-header{
-    padding:20px;
-    background:#1e1e1e;
-    font-size:24px;
-}
+        console.log("4. Fetching existing file...");
+        const getFile = await fetch(api,{
+            headers:{
+                Authorization:`token ${token}`
+            }
+        });
 
-#editor{
-    width:100%;
-    height:80vh;
-}
+        let sha = null;
+        if(getFile.ok){
+            const fileData = await getFile.json();
+            sha = fileData.sha;
+            console.log("5. Got SHA:", sha);
+        } else {
+            console.log("5. File not found, will create new");
+        }
 
-button{
-    width:100%;
-    padding:20px;
-    background:#00bcd4;
-    color:white;
-    border:none;
-    font-size:20px;
-    cursor:pointer;
-}
+        const content = Buffer.from(code).toString('base64');
+        console.log("6. Content encoded, length:", content.length);
 
-</style>
+        console.log("7. Uploading to GitHub...");
+        const upload = await fetch(api,{
+            method:'PUT',
+            headers:{
+                Authorization:`token ${token}`,
+                'Content-Type':'application/json'
+            },
+            body:JSON.stringify({
+                message:'Update ESP32 Code',
+                content,
+                sha
+            })
+        });
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.34.1/min/vs/loader.min.js"></script>
+        console.log("8. GitHub response status:", upload.status);
+        
+        if(upload.ok){
+            const result = await upload.json();
+            console.log("9. Upload success:", result.content.path);
+            return res.status(200).json({
+                message:'Build Started - Code uploaded to GitHub'
+            });
+        } else {
+            const errorText = await upload.text();
+            console.log("9. Upload failed:", upload.status, errorText);
+            return res.status(500).json({
+                message:`GitHub Upload Failed: ${upload.status}`,
+                details: errorText
+            });
+        }
 
-</head>
-
-<body>
-
-<header>
-ESP32 CLOUD OTA
-</header>
-
-<div id="editor"></div>
-
-<button onclick="buildFirmware()">
-BUILD FIRMWARE
-</button>
-
-<script>
-
-let editor;
-
-require.config({
-    paths:{
-        vs:'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.34.1/min/vs'
+    }catch(e){
+        console.log("ERROR:", e);
+        return res.status(500).json({
+            message:e.toString()
+        });
     }
-});
-
-require(['vs/editor/editor.main'], function(){
-
-    editor = monaco.editor.create(document.getElementById('editor'), {
-
-        value:
-`void setup(){
-
-  Serial.begin(115200);
 }
-
-void loop(){
-
-}`,
-
-        language:'cpp',
-
-        theme:'vs-dark'
-    });
-});
-
-async function buildFirmware(){
-
-    const code = editor.getValue();
-
-    const res = await fetch('/api/upload',{
-
-        method:'POST',
-
-        headers:{
-            'Content-Type':'application/json'
-        },
-
-        body:JSON.stringify({
-            code
-        })
-    });
-
-    const data = await res.json();
-
-    alert(data.message);
-}
-
-</script>
-
-</body>
-</html>
