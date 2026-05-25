@@ -2,8 +2,6 @@ name: Build ESP32 Firmware
 
 on:
   push:
-    paths:
-      - '*.ino'
 
 jobs:
 
@@ -13,33 +11,41 @@ jobs:
 
     steps:
 
-    - uses: actions/checkout@v4
+    - name: Checkout
+      uses: actions/checkout@v4
 
-    - uses: arduino/setup-arduino-cli@v2
+    - name: Setup Arduino CLI
+      uses: arduino/setup-arduino-cli@v2
 
-    - run: |
+    - name: Install ESP32 Core
+
+      run: |
 
         arduino-cli core update-index
 
         arduino-cli core install esp32:esp32
 
-    - run: |
+    - name: Compile Firmware
+
+      run: |
 
         arduino-cli compile \
         --fqbn esp32:esp32:esp32 \
+        --output-dir build \
         .
 
-    - run: |
+    - name: Show Build Files
 
-        mkdir output
+      run: |
 
-        find . -name "*.bin" \
-        -exec cp {} output/firmware.bin \;
+        ls -R build
 
-    - uses: actions/upload-artifact@v4
+    - name: Upload Firmware
+
+      uses: actions/upload-artifact@v4
 
       with:
 
         name: firmware
 
-        path: output/firmware.bin
+        path: build/*.bin
