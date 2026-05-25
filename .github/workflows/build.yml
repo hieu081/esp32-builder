@@ -11,7 +11,7 @@ jobs:
 
     steps:
 
-    - name: Checkout
+    - name: Checkout Repository
       uses: actions/checkout@v4
 
     - name: Setup Arduino CLI
@@ -25,7 +25,7 @@ jobs:
 
         arduino-cli core install esp32:esp32
 
-    - name: Compile Firmware
+    - name: Compile ESP32 Firmware
 
       run: |
 
@@ -40,7 +40,13 @@ jobs:
 
         ls -R build
 
-    - name: Upload Firmware
+    - name: Rename Firmware
+
+      run: |
+
+        cp build/*.ino.bin build/firmware.bin
+
+    - name: Upload Firmware Artifact
 
       uses: actions/upload-artifact@v4
 
@@ -48,4 +54,4 @@ jobs:
 
         name: firmware
 
-        path: build/*.bin
+        path: build/firmware.bin
