@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+    width:100%;
+    padding:20px;
+    background:#00bcd4;
+    color:white;
+    border:none;
+    font-size:20px;
+    cursor:pointer;
+}
+
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.34.1/min/vs/loader.min.js"></script>
+
+</head>
+
+<body>
+
+<header>
+ESP32 CLOUD OTA
+</header>
+
+<div id="editor"></div>
+
+<button onclick="buildFirmware()">
+BUILD FIRMWARE
+</button>
+
+<script>
+
+let editor;
+
+require.config({
+    paths:{
+        vs:'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.34.1/min/vs'
+    }
+});
+
+require(['vs/editor/editor.main'], function(){
+
+    editor = monaco.editor.create(document.getElementById('editor'), {
+
+        value:
+`void setup(){
+
+  Serial.begin(115200);
+}
+
+void loop(){
+
+}`,
+
+        language:'cpp',
+
+        theme:'vs-dark'
+    });
+});
+
+async function buildFirmware(){
+
+    const code = editor.getValue();
+
+    const res = await fetch('/api/upload',{
+
+        method:'POST',
+
+        headers:{
+            'Content-Type':'application/json'
+        },
+
+        body:JSON.stringify({
+            code
+        })
+    });
+
+    const data = await res.json();
+
+    alert(data.message);
+}
+
+</script>
+
+</body>
+</html>
